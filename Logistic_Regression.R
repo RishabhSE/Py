@@ -12,12 +12,13 @@ library(MASS)
 # ?Smarket [inbuild dataset]
 # str(Smarket) [STRUCTURE of object]
 # attach(Smarket)
+# sum( is.na(Smarket$direction )) [count no. of missing values]
 dataset = data.frame(Smarket)
 
 #**************************************************
 
 # Correlation
-cor(x =Boston$lstat, y = Boston$medv)
+cor(x =Smarket$Lag1, y = Smarket$direction)
 corrplot(cor(dataset[ , - 9 ]) 
          ,method = 'number') #plotting
 # Ploting
