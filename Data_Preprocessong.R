@@ -178,6 +178,13 @@ if(F)
   test  <- data[-sample, ]
 }
 
-
+# [ METHOD-3 ] indices method
+if(F)
+{
+  set.seed(1)
+  train=sample( 1:nrow(x) ,size = nrow(x)/2)# indices for train
+  test =( -train )
+  y.test = y[test]# indices for test
+}
 
 #**************************************************
