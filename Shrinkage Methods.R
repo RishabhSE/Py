@@ -48,7 +48,7 @@ test =( -train )
 y.test = y[test]
 
 # Fitting R.R on training set
-rigid.mod = glmnet( x[train] ,y[train] ,alpha = 0, lambda = grid,
+rigid.mod = glmnet( x[train ,] ,y[train] ,alpha = 0, lambda = grid,
                     thresh = 1e-12)
 # Prediction using lambda = 4
 rigid.pred = predict( rigid.mod ,s=4, newx = x[test ,])
@@ -69,7 +69,7 @@ mean(( rigid.pred - y.test)^2)
 # same MSE as O/P
 
 # M-2
-# test MSE with least sq. model
+# test MSE with least sq. model( Unpenalized )
 lm( y~x , subset = train)
 predict( rigid.mod, s=0 ,exact=T, type ="coefficients")[1:20, ]
 # For small( ZERO ) value
@@ -77,12 +77,44 @@ rigid.pred = predict( rigid.mod ,s= 0, newx = x[test ,])
 mean(( rigid.pred - y.test)^2)
 # same MSE as O/P
 
-# 
+# CROSS VALIDATION *******************************
+# to choose tuning parameter "lambda"
 
+set.seed(1)
+cv.out = cv.glmnet( x[train,] ,y[train] ,alpha = 0)
+plot(cv.out)
+best_lambda = cv.out$lambda.min ;best_lambda
 
+# now re-fit the RR model using "best_lambda"
+out = glmnet( x,y,alpha = 0)
+predict(oout ,type ="coefficients", s= best_lambda)[1:20,]
 
+#********************************************************* 
 
+# *** LASSO ***
 
+# FITTING
+lasso.mod = glmnet( x[train ,] ,y[train] ,alpha = 1)
+plot(lasso.mod)
+
+# CROSS VALIDATION ***
+# to choose tuning parameter "lambda"
+
+set.seed(1)
+cv.out = cv.glmnet( x[train,] ,y[train] ,alpha = 1)
+plot(cv.out)
+best_lambda = cv.out$lambda.min ;best_lambda
+
+# PRIDICTION
+lasso.pred = predict( lasso.mod ,s= best_lambda, newx = x[test ,])
+# MSE
+mean(( lasso.pred - y.test)^2)
+
+# now re-fit the LASSO model using "best_lambda"
+out = glmnet( x,y,alpha = 1,lambda = grid)
+predict(out ,type ="coefficients", s= best_lambda)[1:20,]
+
+#********************************************************* 
 
 
 
