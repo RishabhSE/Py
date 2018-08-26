@@ -146,9 +146,54 @@ mean((yhat.rf-boston.test)^2)
 
 # View the importance of each variable
 importance(rf.boston)
-# 
+# FORMER : Mean dec. of accuracy in predictions on the out of 
+# the baf model. when a given var. is executed from the model
 
+# LATTER : Measure of totla dec. innode impurity that results 
+# from splits over that variable, average over all trees
 
+# Plotting of importance measurement
+varImpPlot( rf.boston ,pch = 20)
+
+# ***************************************************
+
+# *** BOOSTING ***
+
+library(gbm)
+set.seed(1)
+boost.boston =gbm(medv~., data = Boston[train,], distribution =
+                    "gaussian", n.trees =5000, interaction.depth =4)
+summary(boost.boston)
+# Produces Relative Influence Plot & O/P's the R.I. Statistics
+
+# PLOTTING ( Partial Dependence Plots for 2 var.)
+# It illustrates the marginal effect of selected variables on the 
+# response after integrating out the other variables
+par(mfrow = c(1,2))
+plot( boost.boston ,i ="rm")
+plot( boost.boston ,i ="lstat")
+
+# PREDICTION
+yhat.boost = predict( boost.boston, newdata = Boston[-train,],
+                      n.trees = 5000)
+plot(yhat.boost ,boston.test ,pch =20)
+mean((yhat.boost-boston.test)^2)
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# Changing value of lambda
+
+boost.boston =gbm(medv~., data = Boston[train,], distribution =
+                    "gaussian", n.trees =5000, interaction.depth = 4,
+                  shrinkage = 0.2, verbose = F)
+
+yhat.boost = predict( boost.boston, newdata = Boston[-train,],
+                      n.trees = 5000)
+plot(yhat.boost ,boston.test ,pch =20)
+mean((yhat.boost-boston.test)^2)
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+# ***************************************************
 
 
 
