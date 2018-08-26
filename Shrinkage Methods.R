@@ -1,3 +1,9 @@
+#***************Importing Libraries *********************
+
+library(MASS)
+library(ISLR)
+library(glmnet)
+
 # *******************************************************
 # *** DATA EXPLORATION *** 
 
@@ -10,13 +16,7 @@
 # attach(Hitters)
 
 #********************************************************* 
-#***************Importing Libraries ***************
 
-library(MASS)
-library(ISLR)
-library(glmnet)
-
-#********************************************************* 
 
 # sum( is.na( Hitters$Salary )) #[count no. of missing values]
 Hitters = na.omit(Hitters)
