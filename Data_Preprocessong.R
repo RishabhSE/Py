@@ -33,6 +33,7 @@ polygon(density(Boston$lstat), col="dark green")
 cor(x =Boston$lstat, y = Boston$medv)
 corrplot(cor(x =Boston$lstat, y = Boston$medv) 
          ,method = 'number') #plotting
+# If missing values [ use = complete.obs]
 
 #  Understand distribution across categories[ frequency table ]
 attach(iris)
