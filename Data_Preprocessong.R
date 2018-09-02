@@ -10,6 +10,9 @@
 # str(Dataset) [STRUCTURE of object]
 # attach(Dataset)
 
+# sum( is.na( Dataset$Column )) [count no. of missing values]
+# Dataset = na.omit(Dataset)
+
 #********************************************************* 
 
 #*** GRAPHICAL ANALYSIS *** #1
