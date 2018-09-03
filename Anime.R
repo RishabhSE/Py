@@ -105,7 +105,22 @@ pie3D(x = Type_of_anime$member_total,labels = Type_of_anime$Type,
 # *****GENRE OF ANIME ANALYSIS*****
 genre = as.data.frame(dataset$genre ,stringsAsFactors = F)
 
+uni_df = matrix(0,5,1)
 # HOT-Encoding
+library(data.table)
+
+unique_genre_exp = matrix(unique(unlist((as.data.frame
+                    (tstrsplit(x = genre[6,1],",",type.convert = T))))))
+# 83 Unique genre in the data set
+colnames(unique_genre_exp) = anime[1,1]
+uni_df = cbind2(uni_df,unique_genre_exp)
+
+
+
+
+
+
+
 
 
 
