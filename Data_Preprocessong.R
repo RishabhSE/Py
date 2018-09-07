@@ -1,4 +1,17 @@
-# *******************************************************
+# ********************************************************
+# suppressPackageStartupMessages(library(PACKAGE))
+# To supress package messages
+
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(MASS))
+suppressPackageStartupMessages(library(ggcorrplot))
+
+
+
+# *********************************************************
+# *********************************************************
 
 # *** DATA EXPLORATION *** 
 
@@ -8,31 +21,47 @@
 
 # ?Dataset [inbuild dataset]
 # str(Dataset) [STRUCTURE of object]
+# glimpse(Dataset) [ "DPLYR Pakage" Get a glimpse of your data.(better than 'str()')]
 # attach(Dataset)
 
 # sum( is.na( Dataset$Column )) [count no. of missing values]
 # Dataset = na.omit(Dataset)
 
-#********************************************************* 
+#**********************************************************
+# *********************************************************
 
-#*** GRAPHICAL ANALYSIS *** #1
+#*** GRAPHICAL ANALYSIS ***
 
 # Visualize the linear relationship between the predictor and response
+# METHOD-1 [ BASE ]
 scatter.smooth(x =Boston$lstat, y = Boston$medv ,col ='steel blue' 
                ,pch = 20)
+# METHOD-2 [ GGPLOT2 ]
+gs <- ggplot( Boston ,aes(x = Boston$lstat ,y = Boston$medv)) # SETUP
+gl <- gs + geom_point() + geom_smooth() # Adding Scatterplot & Smoothing geoms
+glb <- gl + labs(title ='Lstat vs Medv', xlab ='LSTAT', ylab = 'MEDV' ) # Labeling
+
 
 # To spot any outlier observations
-boxplot(x =Boston$lstat, y = Boston$medv ,col ='steel blue' 
-        ,pch = 20)
+# METHOD-1 [ BASE ]
+boxplot(x =Boston$lstat, y = Boston$medv ,col ='steel blue' ,pch = 20)
 
 # To see the distribution of the predictor variable
+# METHOD-1 [ BASE ]
 plot(density(x =Boston$lstat, y = Boston$medv))
 polygon(density(Boston$lstat), col="dark green")
 
 # Correlation [ find strength of relationship ]
+# METHOD-1 [ BASE ]
 cor(x =Boston$lstat, y = Boston$medv)
 corrplot(cor(x =Boston$lstat, y = Boston$medv) 
          ,method = 'number') #plotting
+
+# METHOD-2 [ GGPLOT2 ]
+ggcorrplot(cor(Boston),method = 'circle',hc.order = T,
+           type ='lower',colors = c('red','azure','cadetblue1')) #plotting
+
+
 # If missing values [ use = complete.obs]
 
 #  Understand distribution across categories[ frequency table ]
@@ -144,6 +173,8 @@ if(FALSE)
 
 
 # ********************************************************
+# *********************************************************
+
 # ***OUTLIER REMOVAL***
 #BOSTON>LSTAT
 
@@ -157,10 +188,11 @@ n_dataset = subset(dataset,dataset$Boston.lstat > (quantiles[1] - range) &
 
 
 # *********************************************************
+# *********************************************************
 
+# *** SPLIT DATASET ***
 
-
-# Split Dataset [ Method-1 ]
+# [ Method-1 ]
 if(F)
 {
   library(caTools)
@@ -191,4 +223,5 @@ if(F)
   y.test = y[test]# indices for test
 }
 
-#**************************************************
+# *********************************************************
+# *********************************************************

@@ -1,119 +1,161 @@
 #*****************************************************************
+#*****************************************************************
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(corrplot))
+suppressPackageStartupMessages(library(dplyr))
 
-library(corrplot)
 dataset = data.frame(anime[c(-2)])
 
 # sum( is.na( dataset)) [count no. of missing values]
 # dataset = na.omit(dataset)
-# str(dataset)
+# glimpse(dataset)
 # summary(dataset)
-# 
 
 #*****************************************************************
+#*****************************************************************
 
-#*** GRAPHICAL ANALYSIS *** #1
-# Visualize the linear relationship between the predictor and response
-scatter.smooth(x =dataset$rating, y = dataset$members ,col ='steel blue' 
-               ,pch = 20)
+#*** GRAPHICAL ANALYSIS ***
+# Visualize the relationship between the Episodes and Rating
+gs <- ggplot( dataset ,aes(y = log(dataset$episodes) ,x = dataset$rating,color =rating)) # SETUP
+gl <- gs + geom_count()+geom_smooth() # Adding Scatterplot
+glb <- gl + labs(title ='ANIME ', y='LOGARITHM OF EPISODES', x='RATING');glb # Labeling
 
-# To spot any outlier observations
-boxplot(x =dataset$rating, y = dataset$episodes,col ='steel blue' 
-        ,pch = 20,horizontal = T)
 
-# To see the distribution of the predictor variable
-plot(density(x =dataset$anime_id, y = dataset$members))
-polygon(density(dataset$anime_id), col="dark green")
 
 # Correlation
-cor(x =dataset$members, y = dataset$anime_id)
-corrplot(cor(dataset,use = "complete.obs") ,method = 'number') #plotting
+ggcorrplot(cor(dataset[c(-2,-3)]),method = 'circle',hc.order = T,
+           type ='lower',colors = c('darkred','grey','cyan'),title = "CORRELATION MATRIX") #plotting
+
 
 #*****************************************************************
-# ***OUTLIER REMOVAL***
-
-quantiles = quantile(dataset$rating,probs = c(.25,.75))
-range = 1.5*IQR(dataset$rating)
-n_dataset = subset(dataset,dataset$rating > (quantiles[1] - range) & 
-                     dataset$rating < (quantiles[2] + range))
-
 #*****************************************************************
 
-# *****TYPE OF ANIME ANALYSIS*****
+# *****ANIME TYPE  ANALYSIS*****
+
+# Visualize the relationship between the Type and Episode
+
+gs <- ggplot( dataset ,aes(x = dataset$type ,y = log(dataset$episodes),color =type)) # SETUP
+gl <- gs + geom_bar(stat = "identity") # Adding Barplot
+glb <- gl + labs(title ='ANIME ', x='TYPE', y='LOGARITHM OF EPISODES');glb # Labeling
+
+#*****************************************************************
+# Ratings vary by Anime type
+
+# To see the distribution of the variable
+dataset %>% filter(!is.na(rating)) %>% 
+  ggplot(aes(rating, group = type)) +geom_density(aes(fill = type), alpha = .4) +xlim(0, 10)
+
+#*****************************************************************
+# Anime Distribution by TYPE(count)
 
 # ONE HOT ENCODING ***
 # Creating a new dataset for types
 dataset_type = (dataset[1])
-# HOT-Encoding
-for(unique_value in unique(dataset$type))
+
+# METHOD-1 [ BASE ]
+if(FALSE)
+{
+  # HOT-Encoding
+  for(unique_value in unique(dataset$type))
   {
     dataset_type[paste("type", unique_value, sep = ".")] <- 
       ifelse(dataset$type == unique_value, 1, 0)
+  }
+  # Counting
+  Type_of_anime=data.frame(c(sum(dataset_type$type.Movie == 1),
+                             sum(dataset_type$type.TV == 1),
+                             sum(dataset_type$type.OVA == 1),
+                             sum(dataset_type$type.Special == 1),
+                             sum(dataset_type$type.Music == 1),
+                             sum(dataset_type$type.ONA == 1)))
+  colnames(Type_of_anime) = "Count"
+  
+  names = data.frame(c("Movie","TV","OVA","Special","Music","ONA"))
+  colnames(names) = "Type"
+  Type_of_anime = cbind(names,Type_of_anime)
 }
+# METHOD-2 [ USING DPLYR ]
+Type_of_anime_1= data.frame(dataset %>%group_by(type)%>%summarise(Count = n()))
 
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-# Anime Distribution by TYPE
-Type_of_anime=data.frame(c(sum(dataset_type$type.Movie == 1),
-                            sum(dataset_type$type.TV == 1),
-                            sum(dataset_type$type.OVA == 1),
-                            sum(dataset_type$type.Special == 1),
-                            sum(dataset_type$type.Music == 1),
-                            sum(dataset_type$type.ONA == 1)))
-colnames(Type_of_anime) = "Watches"
-
-names = data.frame(c("Movie","TV","OVA","Special","Music","ONA"))
-colnames(names) = "Type"
-Type_of_anime = cbind(names,Type_of_anime)
+# METHOD-3 [ USING table() ]
+Type_of_anime_2 = as.data.frame(table(dataset$type))
+colnames(Type_of_anime_2) =c("type",'Count')
 
 # PLOTTING
-pie(x = Type_of_anime$Watches,labels = Type_of_anime$Type,col = rainbow(6),
-      main = "Anime Distribution by TYPE")
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-# Anime Distribution by MEMBERS
+plot_ly(data = Type_of_anime, labels = ~Type_of_anime$type,
+        values = ~Type_of_anime$Count,type = 'pie')%>%
+  layout(title = 'Anime Distribution by TYPE')
+#*****************************************************************
+# Anime(Type) Distribution by MEMBERS
 
-library(dplyr)
+# METHOD[ DPLYR ]
+Type_of_anime_2 = dataset %>% group_by(type) %>% summarise( count_mem = sum(members))
 
-mem = data.frame() # To store selected anime type "dataset"
-total_mem =matrix(ncol = 1) # to store the total members
-
-# LOOPING : To count the total no. of members of a particular type
-for (i in 1:nrow(Type_of_anime)) 
-{
-  mem = filter(dataset,dataset$type == Type_of_anime$Type[i])
-  total_mem[i] =summarise(mem,sum(mem$members))
-}
-
-# Before combining , we have to unname and unlist the "total_mem"
-mem_df = unname(unlist(data.frame(total_mem)))
-# Column Binding
-Type_of_anime =cbind(Type_of_anime,mem_df)
-colnames(Type_of_anime) = c("Type","watchers","member_total")
+Type_of_anime  = cbind(Type_of_anime,Type_of_anime_2$count_mem)
+colnames(Type_of_anime) = c("Type","Count_type","Count_members")
 
 # PLOTTING
-pie(x = Type_of_anime$member_total,labels = Type_of_anime$Type,
-    col = rainbow(6),main = "Anime Distribution by MEMBERS",
-    start = -pi/6)
+plot_ly(data = Type_of_anime, labels = ~Type_of_anime$Type,
+        values = ~Type_of_anime$Count_members,type = 'pie')%>%
+  layout(title = 'Anime Distribution by MEMBERS')
 
-# PLOTTING 3D
-library(plotrix)
-pie3D(x = Type_of_anime$member_total,labels = Type_of_anime$Type,
-      col = rainbow(6),main = "Anime Distribution by MEMBERS",
-      theta = pi/4,start = -pi/6,explode = 0.1)
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#*****************************************************************
 #*****************************************************************
 
 # *****GENRE OF ANIME ANALYSIS*****
+
+# Similar Anime By Genre
 genre = as.data.frame(dataset$genre ,stringsAsFactors = F)
 
-uni_df = matrix(0,5,1)
-# HOT-Encoding
-library(data.table)
+# Counting Unique genres[ 83 Unique genre in the data set ] 
+unique_genre = (unique(unlist((as.data.frame
+                    (tstrsplit(x = genre[,1],",",type.convert = T))))))
+# Counting Total No. of Genres
+genre_count = as.matrix(unlist(strsplit(x = genre[,1],","))
+                                   ,colnames = "sep")
+# Counting Table
+gc_table = table(genre_count)
+# Counting Datafame
+gc_df = as.data.frame(gc_table)
 
-unique_genre_exp = matrix(unique(unlist((as.data.frame
-                    (tstrsplit(x = genre[6,1],",",type.convert = T))))))
-# 83 Unique genre in the data set
-colnames(unique_genre_exp) = anime[1,1]
-uni_df = cbind2(uni_df,unique_genre_exp)
+# PLOTTING
+plot_ly(data = gc_df,x= gc_df$genre_count ,y=gc_df$Freq,
+        name = "GENRE CHART",type = "bar")%>%
+      layout(title = "GENRE CHART",yaxis = list(title = 'FREQUENCY'), 
+             xaxis = list(title = "GENRE"))
+
+#*****************************************************************
+
+# One Hot-ENCODING
+genre_2 = as.data.frame(tstrsplit(genre[,1], '[,]',type.convert=TRUE),
+                        stringsAsFactors=FALSE)
+
+if(FALSE)
+{
+  genre_matrix <- matrix(0,11830,83)#empty matrix
+  # genre_matrix[1,] <- unique_genre #set first row to genre list
+  colnames(genre_matrix) <- unique_genre #set column names to genre list
+  genre_3 = as.data.frame(genre_2,stringAsFactor = FALSE)
+  
+  # ITERATION
+  for (i in 1:nrow(genre_2)) 
+  {
+    for (j in 1:ncol(genre_2)) 
+    {
+      for( k in 1:ncol(genre_matrix))
+      {
+        genre_matrix[i,k]=ifelse(genre_2[i,j] 
+                                 == colnames(genre_matrix)[k],1, 0)
+      }
+    }
+  }
+}
+
+genre_exp = as.data.frame(cbind(dataset$anime_id,genre_2))
+
+genre_exp %>% 
 
 
 
@@ -122,6 +164,15 @@ uni_df = cbind2(uni_df,unique_genre_exp)
 
 
 
+
+#*****************************************************************
+#*****************************************************************
+
+# *** Movies Having sequence ***
+movie_with_seq <- dataset %>% filter(episodes > 1 ,type == "Movie") %>% summarise( count = n())
+
+# *** Movies Having No Sequence ***
+movie_with_seq <- dataset %>% filter(episodes == 1 ,type == "Movie") %>% summarise( count = n())
 
 
 
