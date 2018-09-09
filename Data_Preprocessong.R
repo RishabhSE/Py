@@ -1,13 +1,17 @@
 # ********************************************************
 # suppressPackageStartupMessages(library(PACKAGE))
 # To supress package messages
-
+if(!"ggplot2" %in% rownames(installed.packages())){install.packages("ggplot2")}
 suppressPackageStartupMessages(library(ggplot2))
+if(!"plotly" %in% rownames(installed.packages())){install.packages("plotly")}
 suppressPackageStartupMessages(library(plotly))
+if(!"dplyr" %in% rownames(installed.packages())){install.packages("dplyr")}
 suppressPackageStartupMessages(library(dplyr))
+if(!"plotly" %in% rownames(installed.packages())){install.packages("plotly")}
 suppressPackageStartupMessages(library(MASS))
+if(!"MASS" %in% rownames(installed.packages())){install.packages("MASS")}
+if(!"ggcorrplot" %in% rownames(installed.packages())){install.packages("ggcorrplot")}
 suppressPackageStartupMessages(library(ggcorrplot))
-
 
 
 # *********************************************************

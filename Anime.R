@@ -5,12 +5,16 @@ suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(corrplot))
 suppressPackageStartupMessages(library(dplyr))
+library(splitstackshape)
+library(gridExtra)
+library(Matrix)
 
 dataset = data.frame(anime[c(-2)])
 
-# sum( is.na( dataset)) [count no. of missing values]
-# dataset = na.omit(dataset)
-# glimpse(dataset)
+sum( is.na( dataset)) #[count no. of missing values]
+dataset = na.omit(dataset)
+
+glimpse(dataset)
 # summary(dataset)
 
 #*****************************************************************
@@ -18,7 +22,7 @@ dataset = data.frame(anime[c(-2)])
 
 #*** GRAPHICAL ANALYSIS ***
 # Visualize the relationship between the Episodes and Rating
-gs <- ggplot( dataset ,aes(y = log(dataset$episodes) ,x = dataset$rating,color =rating)) # SETUP
+gs <- ggplot( dataset ,aes(y = log(dataset$episodes) ,x = dataset$rating,color =rating, fill = rating)) # SETUP
 gl <- gs + geom_count()+geom_smooth() # Adding Scatterplot
 glb <- gl + labs(title ='ANIME ', y='LOGARITHM OF EPISODES', x='RATING');glb # Labeling
 
@@ -36,7 +40,7 @@ ggcorrplot(cor(dataset[c(-2,-3)]),method = 'circle',hc.order = T,
 
 # Visualize the relationship between the Type and Episode
 
-gs <- ggplot( dataset ,aes(x = dataset$type ,y = log(dataset$episodes),color =type)) # SETUP
+gs <- ggplot( dataset ,aes(x = dataset$type ,y = log(dataset$episodes),color =type, fill = type)) # SETUP
 gl <- gs + geom_bar(stat = "identity") # Adding Barplot
 glb <- gl + labs(title ='ANIME ', x='TYPE', y='LOGARITHM OF EPISODES');glb # Labeling
 
@@ -117,7 +121,7 @@ genre_count = as.matrix(unlist(strsplit(x = genre[,1],","))
                                    ,colnames = "sep")
 # Counting Table
 gc_table = table(genre_count)
-# Counting Datafame
+# Counting as Datafame
 gc_df = as.data.frame(gc_table)
 
 # PLOTTING
@@ -126,65 +130,166 @@ plot_ly(data = gc_df,x= gc_df$genre_count ,y=gc_df$Freq,
       layout(title = "GENRE CHART",yaxis = list(title = 'FREQUENCY'), 
              xaxis = list(title = "GENRE"))
 
-#*****************************************************************
+#****************************************************************
 
-# One Hot-ENCODING
-genre_2 = as.data.frame(tstrsplit(genre[,1], '[,]',type.convert=TRUE),
-                        stringsAsFactors=FALSE)
+# *** SPLITTING GENRE ***
+# library(splitstackshape)
 
-if(FALSE)
-{
-  genre_matrix <- matrix(0,11830,83)#empty matrix
-  # genre_matrix[1,] <- unique_genre #set first row to genre list
-  colnames(genre_matrix) <- unique_genre #set column names to genre list
-  genre_3 = as.data.frame(genre_2,stringAsFactor = FALSE)
-  
-  # ITERATION
-  for (i in 1:nrow(genre_2)) 
-  {
-    for (j in 1:ncol(genre_2)) 
-    {
-      for( k in 1:ncol(genre_matrix))
-      {
-        genre_matrix[i,k]=ifelse(genre_2[i,j] 
-                                 == colnames(genre_matrix)[k],1, 0)
-      }
-    }
-  }
-}
-
-genre_exp = as.data.frame(cbind(dataset$anime_id,genre_2))
-
-genre_exp %>% 
-
-
-
-
-
-
-
-
+genre_split <- cSplit_e(dataset, "genre", ",", type = "character", fill = 0)
+genre_split <- genre_split[-2]
 
 #*****************************************************************
 #*****************************************************************
 
-# *** Movies Having sequence ***
+# *** MISCELANEOUS TASKS ***
+
+# 1)
+# Movies Having sequence
 movie_with_seq <- dataset %>% filter(episodes > 1 ,type == "Movie") %>% summarise( count = n())
-
-# *** Movies Having No Sequence ***
+# 2)
+# Movies Having No Sequence
 movie_with_seq <- dataset %>% filter(episodes == 1 ,type == "Movie") %>% summarise( count = n())
 
+#3)
+# Action Type Anime
+anime_with_action <- genre_split %>%group_by(type)%>% filter(genre_Action == 1) %>% summarise( count = n())
+# PLOTING
+gg <- ggplot(anime_with_action ,aes(x =type, y=count, colour =type,fill = type)) + 
+        geom_bar(stat = "identity") +
+          labs(title = "ACTION TYPE ANALYSIS", x="TYPE OF ANIME", y ="COUNTING")
+            theme_bw();gg
+
+# 4)
+# Mixed Type Anime[ COUNT ]
+anime_with_mixed_genre <- genre_split %>%group_by(type)%>% filter(genre_Action == 1,genre_Romance == 1,
+                                                        genre_Thriller ==1 ) %>% summarise( count = n())
+# PLOTING
+gg <- ggplot(anime_with_mixed_genre ,aes(x =type, y=count, colour =type,fill = type)) + 
+  geom_bar(stat = "identity") +
+  labs(title = "ACTION ROMANCE AND THRILLER", x="TYPE OF ANIME", y ="COUNTING")
+theme_bw();gg
+
+# Mixed Type Anime[ NAME ]
+anime_exp <- genre_split %>% filter(genre_Action == 1,genre_Romance == 1,genre_Thriller ==1 ) %>%
+                        select(anime_id)
+# Combining Dataset By Anime_id
+anime_name <- left_join(anime_exp,anime,by = "anime_id")%>%select(anime_id,name,type,rating,members)
+
+#**********************************************************************************************************************************
+#**********************************************************************************************************************************
+#**********************************************************************************************************************************
+
+# *** RATING DATASET ***
+
+dataset_rating = data.frame(rating)
+
+sum( is.na( dataset_rating)) #[count no. of missing values]
+#dataset = na.omit(dataset)
+
+glimpse(dataset)
+summary(dataset)
+
+# 1)
+# People watched & Rated VS NOT-Rated, but watched
+people_rated_watched <- rating %>%  filter( rating == -1) %>% summarise(count = n())
+people_not_rated_watched <-rating %>%  filter( rating != -1) %>% summarise(count = n())
+people_nm <-data.frame(c(people_not_rated_watched,people_rated_watched))
+colnames(people_nm) <- c("Rated_&_watched","Not_Rated_&_Watched")
+
+print(people_nm)
+
+# 2)
+# Average User Rating
+
+average_user_rating <- rating %>% filter( rating != -1) %>% group_by(anime_id) %>% summarise( user_rating = mean(rating))
+# Combining Dataset By Anime_id
+rating_exp <- left_join(average_user_rating,dataset, by ="anime_id") %>% select(anime_id,type,rating,user_rating)
 
 
+#*****************************************************************
+#*****************************************************************
 
+# *** MIX MISCELANEOUS TASKS ***
 
+# 1)
+# User Ratings vary by Anime type
 
+# To see the distribution of the variable BY CRITICS RATING
+gg_1 = rating_exp %>% filter(!is.na(rating)) %>% 
+  ggplot(aes(rating, group = type)) +geom_density(aes(fill = type), alpha = .4) +xlim(0, 10)
 
+# To see the distribution of the variable BY USER RATING
+rating_exp_1 = na.omit(rating_exp)
+gg_2 = rating_exp_1 %>% filter(!is.na(user_rating)) %>% 
+  ggplot(aes(user_rating, group = type)) +geom_density(aes(fill = type), alpha = .4) +xlim(0, 10)
 
+# PLOTING IN ONE SPACE
+#library(gridExtra)
+grid.arrange(gg_1, gg_2, nrow=2)
 
+# 2)
+# 
 
+#**********************************************************************************************************************************
+#**********************************************************************************************************************************
+#**********************************************************************************************************************************
 
+# *** RECOMMENDATION SYSTEM ***
+if(!"recommenderlab" %in% rownames(installed.packages())){install.packages("recommenderlab")}
+library(recommenderlab)
+set.seed(1)
 
+# <<<<<<<<<<<<<< anime.csv >>>>>>>>>>>>>>>
+# Only anime_ ID AND Genres
+recomm_genre = genre_split[c(-2,-3,-4,-5)]
+# Adding Anime Names for searching
+search_anime_1 = left_join(recomm_genre,anime[,c(1,2)],by = "anime_id")
+search_anime_2 = search_anime_1%>%select(anime_id,name)
+search_anime = cbind(search_anime_2,search_anime_1[c(-1,-45)])
 
+sum( is.na( search_anime ))
+# <<<<<<<<<<<<<< rating.csv >>>>>>>>>>>>>>
+# Remove rows that are not rated
+rating_1 <-rating %>%  filter( rating != -1)
 
+# converting rating into likes & dis-likes
+# If[ rating => 5  == like]
+binary_rating_likes <-rating_1 %>% filter(rating > 5)
+binary_rating_likes$rating = 1
+# If[ rating < 5 == dis-like]
+binary_rating_dislikes <-rating_1 %>% filter(rating <= 5)
+binary_rating_dislikes$rating = -1
+# Combine Row-wise
+binary_rating <- rbind(binary_rating_likes,binary_rating_dislikes)
+colnames(binary_rating)[3] <- "user_prespective"
+
+sum( is.na( binary_rating ))
+
+# Creating User Profile
+
+# removing least important genre
+gc_df_user <- gc_df %>% filter(Freq <= 33) %>% select(genre_count)
+search_anime <- search_anime %>% select(-genre_Dementia,-genre_Josei,-`genre_Martial Arts`
+                                        ,-genre_Military,-genre_Parody,-genre_Police,
+                                        -genre_Psychological,-genre_Samurai,-genre_Seinen
+                                        ,-genre_Shoujo,-genre_Space,-`genre_Super Power`
+                                        ,-genre_Thriller,-genre_Vampire,-genre_Yaoi)
+
+# Creating Profile
+user_profile <- left_join(binary_rating,search_anime, by ="anime_id")
+
+# Removing NA values
+sum(is.na(user_profile))
+user_profile <- na.omit(user_profile)
+
+# The User-Based Collaborative Filtering Approach
+library(data.table)
+#Create ratings matrix. Rows = userId, Columns = movieId
+rating_mat <- dcast(binary_rating,anime_id~user_id,value.var = "user_prespective")
+
+library(tidyverse)
+df %>% 
+  gather(key, val, value:rating) %>% 
+  unite(cond, key, condition) %>%
+  spread(cond, val)
 
