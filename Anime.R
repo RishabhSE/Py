@@ -3,7 +3,7 @@
 suppressPackageStartupMessages(library(plotly))
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(data.table))
-suppressPackageStartupMessages(library(corrplot))
+suppressPackageStartupMessages(library(ggcorrplot))
 suppressPackageStartupMessages(library(dplyr))
 library(splitstackshape)
 library(gridExtra)
@@ -203,7 +203,7 @@ print(people_nm)
 
 average_user_rating <- rating %>% filter( rating != -1) %>% group_by(anime_id) %>% summarise( user_rating = mean(rating))
 # Combining Dataset By Anime_id
-rating_exp <- left_join(average_user_rating,dataset, by ="anime_id") %>% select(anime_id,type,rating,user_rating)
+rating_user <- left_join(average_user_rating,dataset, by ="anime_id") %>% select(anime_id,type,rating,user_rating)
 
 
 #*****************************************************************
@@ -215,12 +215,12 @@ rating_exp <- left_join(average_user_rating,dataset, by ="anime_id") %>% select(
 # User Ratings vary by Anime type
 
 # To see the distribution of the variable BY CRITICS RATING
-gg_1 = rating_exp %>% filter(!is.na(rating)) %>% 
+gg_1 = rating_user %>% filter(!is.na(rating)) %>% 
   ggplot(aes(rating, group = type)) +geom_density(aes(fill = type), alpha = .4) +xlim(0, 10)
 
 # To see the distribution of the variable BY USER RATING
-rating_exp_1 = na.omit(rating_exp)
-gg_2 = rating_exp_1 %>% filter(!is.na(user_rating)) %>% 
+rating_user_1 = na.omit(rating_user)
+gg_2 = rating_user_1 %>% filter(!is.na(user_rating)) %>% 
   ggplot(aes(user_rating, group = type)) +geom_density(aes(fill = type), alpha = .4) +xlim(0, 10)
 
 # PLOTING IN ONE SPACE
@@ -282,14 +282,28 @@ user_profile <- left_join(binary_rating,search_anime, by ="anime_id")
 sum(is.na(user_profile))
 user_profile <- na.omit(user_profile)
 
-# The User-Based Collaborative Filtering Approach
-library(data.table)
-#Create ratings matrix. Rows = userId, Columns = movieId
-rating_mat <- dcast(binary_rating,anime_id~user_id,value.var = "user_prespective")
 
-library(tidyverse)
-df %>% 
-  gather(key, val, value:rating) %>% 
-  unite(cond, key, condition) %>%
-  spread(cond, val)
+# 
+#   # The User-Based Collaborative Filtering Approach
+#   library(data.table)
+#   #Create ratings matrix. Rows = userId, Columns = movieId
+#   rating_mat <- dcast(binary_rating,anime_id~user_id,value.var = "user_prespective")
+# 
+#   library(tidyverse)
+#   df %>%
+#     gather(key, val, value:rating) %>%
+#     unite(cond, key, condition) %>%
+#     spread(cond, val)
+
+
+result <- user_profile[93:250,] #Fifth user's profile
+#Calculate Jaccard distance between user profile and all movies
+library(proxy)
+simlicity_result <- dist(result[,c(-2,-4)], method ='Jaccard' )
+
+simlicity_result <- as.data.frame(as.matrix(simlicity_result[1:12403]))
+rows <- which(simlicity_result == min(simlicity_result))
+#Recommended movies
+View(user_profile[rows,4])
+
 
