@@ -74,7 +74,7 @@ summary(regfit.bwd)
 
 # *************************************************
 
-# ***Chosing Among Models ---->VSA ***
+# ***Choosing Among Models ---->VSA ***
 
 # The Determination of which model of given size is best
 # must be made using only the " TRAINING SET OBSEVATION "

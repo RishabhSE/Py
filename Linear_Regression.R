@@ -32,9 +32,7 @@ plot(density(x =Boston$lstat, y = Boston$medv))
 polygon(density(Boston$lstat), col="dark green")
 
 # Correlation
-cor(x =Boston$lstat, y = Boston$medv)
-corrplot(cor(x =Boston$lstat, y = Boston$medv) 
-                          ,method = 'number') #plotting
+corr = cor(x =Boston$lstat, y = Boston$medv)
 
 #**************************************************
 
@@ -117,7 +115,7 @@ actual_preds = data.frame(cbind(actuals =test_set$Boston.medv , predicteds =pred
 
 # Statistics_________________________________________Criterion
 
-#Corellation_________________________________________closer to extreme the better
+#Corelation_________________________________________closer to extreme the better
 #                                                       collrelation [-1,1]
 #MAPE (Mean absolute percentage error)_______________Lower the better
 #MSE (Mean squared error)____________________________Lower the better
